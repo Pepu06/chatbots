@@ -3,6 +3,7 @@ import { FaArrowUp } from "react-icons/fa";
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Importa la librería
 import logo from "../img/logo.png"; // Asegúrate de que la ruta sea correcta
 import logo1 from "../img/logo1.png"; // Asegúrate de que la ruta sea correcta
+import { Link } from "react-router-dom";
 
 const TextChat = () => {
   const [messages, setMessages] = useState([]);
@@ -68,67 +69,77 @@ const TextChat = () => {
   };
 
   return (
-    <div className="bg-[rgb(22,24,25)] flex justify-center">
-      <div className="flex flex-col h-screen p-4 w-full max-w-3xl">
-        <div className="flex-grow overflow-y-auto no-scrollbar flex flex-col-reverse">
-          <div>
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                } mb-2`}
-              >
+    <div>
+      <div className="bg-[rgb(22,24,25)] absolute m-8">
+        <Link
+          to="/" // Enlace a la página del generador de imágenes
+          className="m-5" // Cambia el color de fondo al pasar el cursor
+        >
+          <img src={logo1} alt="Home" className="h-8 w-8" />
+        </Link>
+      </div>
+      <div className="bg-[rgb(22,24,25)] flex justify-center">
+        <div className="flex flex-col h-screen p-4 w-full max-w-3xl">
+          <div className="flex-grow overflow-y-auto no-scrollbar flex flex-col-reverse">
+            <div>
+              {messages.map((message) => (
                 <div
-                  className={`max-w-xs rounded-3xl px-5 py-3 ${
-                    message.sender === "user"
-                      ? "bg-[rgb(38,39,40)] text-white"
-                      : "text-white"
-                  }`}
+                  key={message.id}
+                  className={`flex ${
+                    message.sender === "user" ? "justify-end" : "justify-start"
+                  } mb-2`}
                 >
-                  {message.isLoading && (
-                    <div className="flex items-center">
-                      <img
-                        src={logo}
-                        alt="Logo girando"
-                        className="w-6 h-6 mr-3 animate-spin"
-                      />
-                      Generando respuesta...
-                    </div>
-                  )}
-                  {!message.isLoading && (
-                    <div className="flex items-start">
-                      {message.sender === "bot" && (
-                        <>
-                          <img
-                            src={logo1}
-                            alt="Logo 1"
-                            className="w-6 h-6 mr-5"
-                          />
-                        </>
-                      )}
-                      {message.text}
-                    </div>
-                  )}
+                  <div
+                    className={`max-w-xs rounded-3xl px-5 py-3 ${
+                      message.sender === "user"
+                        ? "bg-[rgb(38,39,40)] text-white"
+                        : "text-white"
+                    }`}
+                  >
+                    {message.isLoading && (
+                      <div className="flex items-center">
+                        <img
+                          src={logo}
+                          alt="Logo girando"
+                          className="w-6 h-6 mr-3 animate-spin"
+                        />
+                        Generando respuesta...
+                      </div>
+                    )}
+                    {!message.isLoading && (
+                      <div className="flex items-start">
+                        {message.sender === "bot" && (
+                          <>
+                            <img
+                              src={logo1}
+                              alt="Logo 1"
+                              className="w-6 h-6 mr-5"
+                            />
+                          </>
+                        )}
+                        {message.text}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4">
-          <input
-            className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Escribe tu mensaje..."
-          />
-          <button
-            className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
-            onClick={handleSend}
-          >
-            <FaArrowUp color="gray" />
-          </button>
+          <div className="flex items-center border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4">
+            <input
+              className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Escribe tu mensaje..."
+            />
+            <button
+              className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
+              onClick={handleSend}
+            >
+              <FaArrowUp color="gray" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
