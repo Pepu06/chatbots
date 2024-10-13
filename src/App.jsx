@@ -12,6 +12,16 @@ import TextChat from "./components/TextChat";
 import logo from "./img/logo.png";
 import { AudioToTextCard } from "./components/AudioToTextCard";
 import AudioToTextChat from "./components/AudioToTextChat";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+} from "@clerk/clerk-react";
+import { SignIn } from "@clerk/clerk-react";
+import { IoPersonCircleOutline } from "react-icons/io5";
+import { Link } from "react-router-dom";
+import SignInPage from "./components/SignInPage";
 
 // Verificar si la API de View Transitions es soportada
 const isViewTransitionSupported = () => "startViewTransition" in document;
@@ -33,30 +43,55 @@ function App() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-[rgb(22,24,25)]">
+      <div className="absolute top-0 left-0 m-5 flex justify-start">
+        <SignedOut>
+          <div
+            className="cursor-pointer flex items-center justify-center" // Increased size
+            onClick={() => handleNavigation("/signin")}
+          >
+            <IoPersonCircleOutline size={50} color="dark-grey" />
+          </div>
+        </SignedOut>
+        <SignedIn>
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "w-10 h-10", // Increased size
+              },
+            }}
+          />
+        </SignedIn>
+      </div>
       <img src={logo} alt="Logo" className="mt-24 mb-6 h-16 w-auto" />
-      <h1 className="text-center text-white text-3xl font-semibold">
+      <h1 className="text-center hidden sm:flex text-white text-3xl font-semibold">
         All AI models in only one site
       </h1>
-      <div className="flex justify-center items-center h-full">
-        <div
-          className="mx-5 cursor-pointer"
-          onClick={() => handleNavigation("/textgenerator")}
-        >
-          <TextCard />
-        </div>
+      <h1 className="text-center flex mb-10 sm:hidden text-white text-4xl font-semibold">
+        AI chatbots
+      </h1>
+      <div className="flex flex-wrap justify-center overflow-y-auto items-center h-full">
+        {/* Card Container */}
+        <div className="flex flex-col sm:flex-row">
+          <div
+            className="m-2 cursor-pointer"
+            onClick={() => handleNavigation("/textgenerator")}
+          >
+            <TextCard />
+          </div>
 
-        <div
-          className="mx-5 cursor-pointer"
-          onClick={() => handleNavigation("/imggenerator")}
-        >
-          <ImageCard />
-        </div>
+          <div
+            className="m-2 cursor-pointer"
+            onClick={() => handleNavigation("/imggenerator")}
+          >
+            <ImageCard />
+          </div>
 
-        <div
-          className="mx-5 cursor-pointer"
-          onClick={() => handleNavigation("/speechtotext")}
-        >
-          <AudioToTextCard />
+          <div
+            className="m-2 cursor-pointer"
+            onClick={() => handleNavigation("/speechtotext")}
+          >
+            <AudioToTextCard />
+          </div>
         </div>
       </div>
     </div>
@@ -77,6 +112,7 @@ export default function AppRouter() {
         <Route path="/imggenerator" element={<ImagenChat />} />
         <Route path="/textgenerator" element={<TextChat />} />
         <Route path="/speechtotext" element={<AudioToTextChat />} />
+        <Route path="/signin" element={<SignInPage />} />
       </Routes>
     </Router>
   );
