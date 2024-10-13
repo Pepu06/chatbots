@@ -152,16 +152,16 @@ const ImagenChat = () => {
           {!conversationStarted && (
             <div className=" flex-col justify-center items-center h-full mt-40">
               <h1 className="mb-10 items-center justify-center text-center">
-                <span className="text-white">
+                <span className="text-white text-2xl">
                   ¡Prueba a generar una imagen como estas!
                 </span>
               </h1>
               <div className="flex space-x-4">
                 {/* Añadir espacio entre las tarjetas */}
-                <OnlyImgCard img={img1} />
-                <OnlyImgCard img={img2} />
+                <OnlyImgCard img={img1} text={"Una acogedora casa en un árbol, hecha de madera clara y rodeada de hojas verdes, con ventanas que dejan entrar la luz del sol."} />
+                <OnlyImgCard img={img2} text={'Una cocina acogedora y rústica con gabinetes de madera, un piso de madera y una estufa azul. La luz natural entra por una ventana grande, creando una atmósfera cálida y hogareña.'}/>
                 {/* Asegúrate de tener img2 definido */}
-                <OnlyImgCard img={img3} />
+                <OnlyImgCard img={img3} text={'Un paisaje otoñal sereno con un bote de remos en el centro de un lago tranquilo. Los árboles con hojas rojizas y anaranjadas enmarcan la escena, creando una atmósfera mágica.'} />
                 {/* Asegúrate de tener img3 definido */}
               </div>
             </div>
