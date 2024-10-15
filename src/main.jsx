@@ -29,6 +29,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       }}
     >
       <App />
+      <link
+        rel="stylesheet"
+        type="text/css"
+        href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+      ></link>
+      <script
+        type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/toastify-js"
+      ></script>
     </ClerkProvider>
   </React.StrictMode>
 );

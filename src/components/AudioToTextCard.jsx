@@ -72,7 +72,7 @@ export const Card = ({ className, children }) => {
   return (
     <div
       className={cn(
-        "max-w-sm mt-10 w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] bg-[rgba(40,40,40,0.70)] shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
+        "max-w-sm mt-0 sm:mt-10 w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] bg-[rgba(40,40,40,0.70)] shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
         className
       )}
     >

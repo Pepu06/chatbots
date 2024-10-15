@@ -1,8 +1,16 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { FaArrowUp, FaCopy, FaCheck } from "react-icons/fa";
+"use client";
+
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import {
+  FaArrowUp,
+  FaCopy,
+  FaCheck,
+  FaPaperclip,
+  FaHome,
+  FaImage,
+  FaTrash,
+} from "react-icons/fa";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import logo from "../img/logo.png";
-import logo1 from "../img/logo1.png";
 import Markdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -19,24 +27,33 @@ import {
   setDoc,
   doc,
   orderBy,
+  deleteDoc,
 } from "firebase/firestore";
 import { Link } from "react-router-dom";
-import { FaHome } from "react-icons/fa";
+import logo from "../img/logo.png";
+import logo1 from "../img/logo1.png";
+import Toastify from "toastify-js";
+import { FaXmark } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+
+const genAI = new GoogleGenerativeAI("AIzaSyDaByQuxXk1KhZTZGBG4wxBZNalZJxyFPs");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const isViewTransitionSupported = () => "startViewTransition" in document;
 
 export default function TextChat() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [copiedStates, setCopiedStates] = useState({});
   const [isStreaming, setIsStreaming] = useState(false);
   const [menu, setMenu] = useState(false);
   const [conversations, setConversations] = useState([]);
-  const userId = useAuth()["userId"];
+  const { userId } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState(null);
-
-  const genAI = new GoogleGenerativeAI(
-    "AIzaSyDaByQuxXk1KhZTZGBG4wxBZNalZJxyFPs"
-  );
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const words = [
     { text: "How" },
@@ -72,10 +89,27 @@ export default function TextChat() {
   }, [userId]);
 
   const handleSend = async () => {
-    if (input.trim()) {
-      const newMessage = { id: Date.now(), sender: "user", text: input };
+    if (input.trim() || selectedFile) {
+      let fileContent = null;
+      let imagePart = null;
+      if (selectedFile) {
+        if (selectedFile.type.startsWith("image/")) {
+          imagePart = await fileToGenerativePart(selectedFile);
+        } else {
+          fileContent = await readFileContent(selectedFile);
+        }
+      }
+
+      const newMessage = {
+        id: Date.now(),
+        sender: "user",
+        text: input,
+        fileName: selectedFile ? selectedFile.name : null,
+        fileType: selectedFile ? selectedFile.type : null,
+      };
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       setInput("");
+      setSelectedFile(null);
 
       const loadingMessageId = Date.now() + 1;
       setMessages((prevMessages) => [
@@ -97,9 +131,18 @@ export default function TextChat() {
           )
           .join("\n");
 
-        const prompt = `${context}\nUser: ${input}\nBot:`;
+        const prompt = `${context}\nUser: ${input}`;
+        const parts = [prompt];
 
-        const result = await model.generateContentStream(prompt);
+        if (imagePart) {
+          parts.push(imagePart);
+        } else if (fileContent) {
+          parts.push(`File content:\n${fileContent}`);
+        }
+
+        parts.push("Bot:");
+
+        const result = await model.generateContentStream(parts);
         let botResponse = "";
 
         for await (const chunk of result.stream) {
@@ -170,6 +213,41 @@ export default function TextChat() {
     setMenu((prev) => !prev);
   };
 
+  const handleDelete = async (conversationId) => {
+    if (selectedConversation?.id === conversationId) {
+      setSelectedConversation(null);
+      setMessages([]);
+    }
+
+    try {
+      // Eliminar la conversación de Firestore
+      await deleteDoc(doc(db, "conversations", conversationId));
+      // Mostrar notificacion de eliminacion exitosa
+
+      // Actualizar el estado local
+      setConversations((prevConversations) =>
+        prevConversations.filter((conv) => conv.id !== conversationId)
+      );
+
+      Toastify({
+        text: "Conversación eliminada",
+        duration: 2000,
+        destination: "https://github.com/apvarun/toastify-js",
+        newWindow: true,
+        close: true,
+        gravity: "top", // `top` or `bottom`
+        position: "center", // `left`, `center` or `right`
+        stopOnFocus: true, // Prevents dismissing of toast on hover
+        style: {
+          background: "red",
+        },
+        onClick: function () {}, // Callback after click
+      }).showToast();
+    } catch (error) {
+      console.error("Error deleting conversation: ", error);
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -197,6 +275,36 @@ export default function TextChat() {
       }, 2000);
     });
   }, []);
+
+  const handleFileSelect = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const readFileContent = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target.result);
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    });
+  };
+
+  const fileToGenerativePart = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Data = event.target.result.split(",")[1];
+        resolve({
+          inlineData: {
+            data: base64Data,
+            mimeType: file.type,
+          },
+        });
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
 
   const MarkdownComponents = {
     code({ node, inline, className, children, ...props }) {
@@ -231,44 +339,81 @@ export default function TextChat() {
       );
     },
   };
+  const handleNavigation = (path) => {
+    if (isViewTransitionSupported()) {
+      // Usar la API View Transition si está disponible
+      document.startViewTransition(() => {
+        navigate(path);
+      });
+    } else {
+      // Fallback si la API no está disponible
+      navigate(path);
+    }
+  };
 
   return (
     <div className="bg-[rgb(22,24,25)] h-screen">
+      <button
+        className="sm:flex hidden absolute right-4 top-1/2 transform -translate-y-1/2 p-4"
+        onClick={() => handleNavigation("/imggenerator")}
+        title="Audio to text"
+      >
+        <FaArrowRight size={30} color="white" />
+      </button>
       <button onClick={handleMenu} className="absolute p-8">
         <GiHamburgerMenu size={25} color="white" />
       </button>
       <div
-        className={`absolute h-screen transition-transform duration-300 ease-in-out top-0 left-0 sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
+        className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg z-50 flex flex-col ${
           menu ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between p-4">
-          <button onClick={handleMenu} className="p-4">
-            <GiHamburgerMenu size={25} color="white" />
+          <button
+            onClick={handleMenu}
+            className="p-4 text-white hover:text-red-600"
+          >
+            <FaXmark size={25} />
           </button>
           <Link to="/">
-            <div className="p-4">
-              <FaHome color="white" size={25} />
+            <div className="p-4 text-white hover:text-blue-600 transition-all">
+              <FaHome size={25} />
             </div>
           </Link>
         </div>
         <div className="overflow-y-auto">
-        {conversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
-              selectedConversation?.id === conversation.id ? "bg-gray-700" : ""
-            }`}
-            onClick={() => loadConversation(conversation)}
-          >
-            {conversation.messages[0]?.text.substring(0, 30) ||
-              "Nueva conversación"}
-          </button>
-        ))}
+          {conversations.map((conversation) => (
+            <div className="flex flex-row group">
+              <button
+                key={conversation.id}
+                className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
+                  selectedConversation?.id === conversation.id
+                    ? "bg-gray-700"
+                    : ""
+                }`}
+                onClick={() => loadConversation(conversation)}
+              >
+                {conversation.messages[0]?.text.substring(0, 30) ||
+                  "Nueva conversación"}
+              </button>
+              {/* Botón del tacho que aparece en hover */}
+              <button
+                className={`p-2 text-white hover:text-red-500 opacity-0 group-hover:opacity-100 duration-300 transition-all
+                ${
+                  selectedConversation?.id === conversation.id
+                    ? "opacity-100"
+                    : "opacity-0"
+                }`}
+                onClick={() => handleDelete(conversation.id)}
+              >
+                <FaTrash size={20} />
+              </button>
+            </div>
+          ))}
         </div>
         <div className="mt-auto flex justify-center">
           <button
-            className="w-11/12 p-2 m-2 border bg-gray-700 border-gray-800 text-white rounded-md"
+            className="w-11/12 p-2 m-2 border bg-[rgb(27,30,31)] border-transparent transition-all hover:border-gray-700 text-white rounded-md"
             onClick={startNewConversation}
           >
             Nueva conversación
@@ -284,21 +429,42 @@ export default function TextChat() {
           {messages.length === 0 && (
             <div className="flex justify-center flex-col items-center h-full">
               <TypewriterEffectSmooth words={words} />
-              <div className="flex items-center w-full border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4">
-                <textarea
-                  className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors resize-none"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Escribe tu mensaje..."
-                  rows={1}
-                />
-                <button
-                  className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
-                  onClick={handleSend}
-                >
-                  <FaArrowUp color="gray" />
-                </button>
+              <div className="flex flex-col items-center w-full border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4">
+                {selectedFile && (
+                  <div className="text-white text-sm mb-2">
+                    Archivo seleccionado: {selectedFile.name}
+                  </div>
+                )}
+                <div className="flex w-full">
+                  <button
+                    className="ml-2 mr-1 rotate-pedro text-white rounded-xl focus:outline-none"
+                    onClick={() => fileInputRef.current.click()}
+                    title="Adjuntar archivo" // Este es el mensaje que aparece al hacer hover
+                  >
+                    <FaPaperclip size={18} color="gray" />
+                  </button>
+                  <textarea
+                    className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors resize-none"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Escribe tu mensaje..."
+                    rows={1}
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept="image/*,.txt,.pdf,.doc,.docx"
+                  />
+                  <button
+                    className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
+                    onClick={handleSend}
+                  >
+                    <FaArrowUp color="gray" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -312,7 +478,7 @@ export default function TextChat() {
                   } mb-4`}
                 >
                   <div
-                    className={`max-w-72 sm:max-w-lg rounded-3xl px-5 py-3 ${
+                    className={`max-w-72 sm:max-w-3xl rounded-3xl px-5 py-3 ${
                       message.sender === "user"
                         ? "bg-[rgb(38,39,40)] text-white"
                         : "text-white leading-loose bot-message"
@@ -328,13 +494,24 @@ export default function TextChat() {
                         {message.text}
                       </div>
                     ) : (
-                      <div className="flex items-start">
-                        {message.sender === "bot" && (
+                      <div className="flex items-start flex-col">
+                        {message.sender === "bot" ? (
                           <img
                             src={logo1}
                             alt="Logo"
-                            className="w-8 h-8 mr-2"
+                            className="w-8 h-8 mb-2"
                           />
+                        ) : (
+                          message.fileName && (
+                            <div className="text-sm text-gray-400 mb-1 flex items-center">
+                              {message.fileType?.startsWith("image/") ? (
+                                <FaImage className="mr-1" />
+                              ) : (
+                                <FaPaperclip className="mr-1" />
+                              )}
+                              Archivo adjunto: {message.fileName}
+                            </div>
+                          )
                         )}
                         <Markdown
                           components={MarkdownComponents}
@@ -351,23 +528,49 @@ export default function TextChat() {
             </div>
           </div>
           <div
-            className={`items-center w-full border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4
+            className={`flex flex-col items-center w-full border rounded-2xl border-gray-800 hover:border-gray-700 bg-[rgb(27,30,31)] p-2 shadow-md mt-4
               ${messages.length === 0 ? "hidden" : "flex"}`}
           >
-            <textarea
-              className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors resize-none"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Escribe tu mensaje..."
-              rows={1}
-            />
-            <button
-              className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
-              onClick={handleSend}
-            >
-              <FaArrowUp color="gray" />
-            </button>
+            {selectedFile && (
+              <div className="text-white text-sm mb-2 self-start ml-2 flex items-center">
+                {selectedFile.type.startsWith("image/") ? (
+                  <FaImage className="mr-1" />
+                ) : (
+                  <FaPaperclip className="mr-1" />
+                )}
+                Archivo seleccionado: {selectedFile.name}
+              </div>
+            )}
+            <div className="flex w-full">
+              <button
+                className="ml-2 mr-1 rotate-pedro text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
+                onClick={() => fileInputRef.current.click()}
+                title="Adjuntar archivo" // Este es el mensaje que aparece al hacer hover
+              >
+                <FaPaperclip size={15} color="gray" />
+              </button>
+              <textarea
+                className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors resize-none"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Escribe tu mensaje..."
+                rows={1}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,.txt,.pdf,.doc,.docx"
+              />
+              <button
+                className="ml-2 px-4 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
+                onClick={handleSend}
+              >
+                <FaArrowUp color="gray" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

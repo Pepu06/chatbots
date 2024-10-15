@@ -19,8 +19,16 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { FaHome } from "react-icons/fa";
+import { FaXmark } from "react-icons/fa6";
+import { deleteDoc } from "firebase/firestore";
+import Toastify from "toastify-js";
+import { FaTrash, FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+
+const isViewTransitionSupported = () => "startViewTransition" in document;
 
 const AudioToTextChat = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [audioFile, setAudioFile] = useState(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -46,12 +54,6 @@ const AudioToTextChat = () => {
           ...doc.data(),
         }));
         setConversations(fetchedConversations);
-
-        if (fetchedConversations.length > 0) {
-          const mostRecentConversation = fetchedConversations[0];
-          setSelectedConversation(mostRecentConversation);
-          setMessages(mostRecentConversation.messages);
-        }
       } catch (error) {
         console.error("Error fetching conversations: ", error);
       }
@@ -81,6 +83,41 @@ const AudioToTextChat = () => {
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSend();
+    }
+  };
+
+  const handleDelete = async (conversationId) => {
+    if (selectedConversation?.id === conversationId) {
+      setSelectedConversation(null);
+      setMessages([]);
+    }
+
+    try {
+      // Eliminar la conversación de Firestore
+      await deleteDoc(doc(db, "conversations", conversationId));
+      // Mostrar notificacion de eliminacion exitosa
+
+      // Actualizar el estado local
+      setConversations((prevConversations) =>
+        prevConversations.filter((conv) => conv.id !== conversationId)
+      );
+
+      Toastify({
+        text: "Conversación eliminada",
+        duration: 2000,
+        destination: "https://github.com/apvarun/toastify-js",
+        newWindow: true,
+        close: true,
+        gravity: "top", // `top` or `bottom`
+        position: "center", // `left`, `center` or `right`
+        stopOnFocus: true, // Prevents dismissing of toast on hover
+        style: {
+          background: "red",
+        },
+        onClick: function () {}, // Callback after click
+      }).showToast();
+    } catch (error) {
+      console.error("Error deleting conversation: ", error);
     }
   };
 
@@ -196,8 +233,28 @@ const AudioToTextChat = () => {
     setMenu(false);
   };
 
+  const handleNavigation = (path) => {
+    if (isViewTransitionSupported()) {
+      // Usar la API View Transition si está disponible
+      document.startViewTransition(() => {
+        navigate(path);
+      });
+    } else {
+      // Fallback si la API no está disponible
+      navigate(path);
+    }
+  };
+
   return (
     <div className="bg-[rgb(22,24,25)] h-screen w-full">
+      {/* Flecha izquierda */}
+      <button
+        className="sm:flex hidden absolute left-4 top-1/2 transform -translate-y-1/2 p-4"
+        onClick={() => handleNavigation("/imggenerator")}
+        title="Image generation"
+      >
+        <FaArrowLeft size={30} color="white" />
+      </button>
       <button onClick={handleMenu} className="absolute p-8">
         <GiHamburgerMenu size={25} color="white" />
       </button>
@@ -207,34 +264,51 @@ const AudioToTextChat = () => {
         }`}
       >
         <div className="flex items-center justify-between p-4">
-          <button onClick={handleMenu} className="p-4">
-            <GiHamburgerMenu size={25} color="white" />
+          <button
+            onClick={handleMenu}
+            className="p-4 text-white hover:text-red-600"
+          >
+            <FaXmark size={25} />
           </button>
           <Link to="/">
-            <div className="p-4">
-              <FaHome color="white" size={25} />
+            <div className="p-4 text-white hover:text-blue-600 transition-all">
+              <FaHome size={25} />
             </div>
           </Link>
         </div>
         <div className="overflow-y-auto">
           {conversations.map((conversation) => (
-            <button
-              key={conversation.id}
-              className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
-                selectedConversation?.id === conversation.id
-                  ? "bg-gray-700"
-                  : ""
-              }`}
-              onClick={() => loadConversation(conversation)}
-            >
-              {conversation.messages[0]?.text.substring(0, 30) ||
-                "Nueva conversación"}
-            </button>
+            <div className="flex flex-row group">
+              <button
+                key={conversation.id}
+                className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
+                  selectedConversation?.id === conversation.id
+                    ? "bg-gray-700"
+                    : ""
+                }`}
+                onClick={() => loadConversation(conversation)}
+              >
+                {conversation.messages[0]?.text.substring(0, 30) ||
+                  "Nueva conversación"}
+              </button>
+              {/* Botón del tacho que aparece en hover */}
+              <button
+                className={`p-2 text-white hover:text-red-500 opacity-0 group-hover:opacity-100 duration-300 transition-all
+                ${
+                  selectedConversation?.id === conversation.id
+                    ? "opacity-100"
+                    : "opacity-0"
+                }`}
+                onClick={() => handleDelete(conversation.id)}
+              >
+                <FaTrash size={20} />
+              </button>
+            </div>
           ))}
         </div>
         <div className="mt-auto flex justify-center">
           <button
-            className="w-11/12 p-2 m-2 border bg-gray-700 border-gray-800 text-white rounded-md"
+            className="w-11/12 p-2 m-2 border bg-[rgb(27,30,31)] border-transparent transition-all hover:border-gray-700 text-white rounded-md"
             onClick={startNewConversation}
           >
             Nueva conversación
