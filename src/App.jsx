@@ -42,7 +42,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-[rgb(22,24,25)]">
+    <div className="flex flex-col overscroll-none items-center justify-center h-screen bg-[rgb(22,24,25)]">
       <div className="absolute top-0 left-0 m-5 flex justify-start">
         <SignedOut>
           <div

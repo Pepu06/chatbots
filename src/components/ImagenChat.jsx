@@ -183,18 +183,22 @@ const ImagenChat = () => {
             </div>
           </Link>
         </div>
-        {conversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
-              selectedConversation?.id === conversation.id ? "bg-gray-700" : ""
-            }`}
-            onClick={() => loadConversation(conversation)}
-          >
-            {conversation.messages[0]?.text.substring(0, 30) ||
-              "Nueva conversación"}
-          </button>
-        ))}
+        <div className="overflow-y-auto">
+          {conversations.map((conversation) => (
+            <button
+              key={conversation.id}
+              className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
+                selectedConversation?.id === conversation.id
+                  ? "bg-gray-700"
+                  : ""
+              }`}
+              onClick={() => loadConversation(conversation)}
+            >
+              {conversation.messages[0]?.text.substring(0, 30) ||
+                "Nueva conversación"}
+            </button>
+          ))}
+        </div>
         <div className="mt-auto flex justify-center">
           <button
             className="w-11/12 p-2 m-2 border bg-gray-700 border-gray-800 text-white rounded-md"
@@ -205,8 +209,8 @@ const ImagenChat = () => {
         </div>
       </div>
       <div
-        className={`flex justify-center h-screen transition-margin duration-300 ease-in-out ${
-          menu ? "ml-64" : "ml-0"
+        className={`justify-center h-screen transition-margin duration-300 ease-in-out ${
+          menu ? "ml-64 hidden sm:flex" : "flex ml-0"
         }`}
       >
         <div className="flex flex-col p-4 w-full max-w-3xl">

@@ -186,6 +186,7 @@ export default function TextChat() {
   const startNewConversation = () => {
     setMessages([]);
     setSelectedConversation(null);
+    setMenu(false);
   };
 
   const copyToClipboard = useCallback((text, id) => {
@@ -237,7 +238,7 @@ export default function TextChat() {
         <GiHamburgerMenu size={25} color="white" />
       </button>
       <div
-        className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
+        className={`absolute h-screen transition-transform duration-300 ease-in-out top-0 left-0 sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
           menu ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -251,6 +252,7 @@ export default function TextChat() {
             </div>
           </Link>
         </div>
+        <div className="overflow-y-auto">
         {conversations.map((conversation) => (
           <button
             key={conversation.id}
@@ -263,6 +265,7 @@ export default function TextChat() {
               "Nueva conversación"}
           </button>
         ))}
+        </div>
         <div className="mt-auto flex justify-center">
           <button
             className="w-11/12 p-2 m-2 border bg-gray-700 border-gray-800 text-white rounded-md"
@@ -273,44 +276,8 @@ export default function TextChat() {
         </div>
       </div>
       <div
-        className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
-          menu ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between p-4">
-          <button onClick={handleMenu} className="p-4">
-            <GiHamburgerMenu size={25} color="white" />
-          </button>
-          <Link to="/">
-            <div className="p-4">
-              <FaHome color="white" size={25} />
-            </div>
-          </Link>
-        </div>
-        {conversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
-              selectedConversation?.id === conversation.id ? "bg-gray-700" : ""
-            }`}
-            onClick={() => loadConversation(conversation)}
-          >
-            {conversation.messages[0]?.text.substring(0, 30) ||
-              "Nueva conversación"}
-          </button>
-        ))}
-        <div className="mt-auto flex justify-center">
-          <button
-            className="w-11/12 p-2 m-2 border bg-gray-700 border-gray-800 text-white rounded-md"
-            onClick={startNewConversation}
-          >
-            Nueva conversación
-          </button>
-        </div>
-      </div>
-      <div
-        className={`flex justify-center h-screen transition-margin duration-300 ease-in-out ${
-          menu ? "ml-64" : "ml-0"
+        className={`justify-center h-screen transition-margin duration-300 ease-in-out ${
+          menu ? "ml-64 hidden sm:flex" : "flex ml-0"
         }`}
       >
         <div className="flex flex-col p-4 w-full max-w-3xl">
