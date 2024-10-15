@@ -5,8 +5,8 @@ import { cn } from "../lib/utils";
 import img1 from "../img/img1.jpg";
 import img2 from "../img/img2.jpg";
 import img3 from "../img/img3.jpg";
-import { TextGenerateEffect } from "../text/TextGenerateEffect";
-import { TextRevealEffect } from "../text/TextRevealEffect";
+import { TextGenerateEffect } from "../acernity/TextGenerateEffect";
+import { TextRevealEffect } from "../acernity/TextRevealEffect";
 
 export function AudioToTextCard() {
   return (
@@ -61,7 +61,7 @@ const Sparkles = () => {
             borderRadius: "50%",
             zIndex: 1,
           }}
-          className="inline-block bg-black dark:bg-white"
+          className="inline-block bg-black"
         ></motion.span>
       ))}
     </div>
@@ -72,7 +72,7 @@ export const Card = ({ className, children }) => {
   return (
     <div
       className={cn(
-        "max-w-sm w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] dark:bg-[rgba(40,40,40,0.70)] bg-gray-100 shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
+        "max-w-sm mt-10 w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] bg-[rgba(40,40,40,0.70)] shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
         className
       )}
     >
@@ -85,7 +85,7 @@ export const CardTitle = ({ children, className }) => {
   return (
     <h3
       className={cn(
-        "text-lg font-semibold text-gray-800 dark:text-white py-2",
+        "text-lg font-semibold text-white py-2",
         className
       )}
     >
@@ -98,7 +98,7 @@ export const CardDescription = ({ children, className }) => {
   return (
     <p
       className={cn(
-        "text-sm font-normal text-neutral-600 dark:text-neutral-400 max-w-sm",
+        "text-sm font-normal text-neutral-400 max-w-sm",
         className
       )}
     >
@@ -118,7 +118,7 @@ export const CardSkeletonContainer = ({
         "h-[15rem] md:h-[20rem] rounded-xl z-40",
         className,
         showGradient &&
-          "bg-neutral-300 dark:bg-[rgba(40,40,40,0.70)] [mask-image:radial-gradient(50%_50%_at_50%_50%,white_0%,transparent_100%)]"
+          "bg-[rgba(40,40,40,0.70)] [mask-image:radial-gradient(50%_50%_at_50%_50%,white_0%,transparent_100%)]"
       )}
     >
       {children}

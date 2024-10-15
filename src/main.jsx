@@ -8,7 +8,6 @@ import { dark } from "@clerk/themes";
 // Import your publishable key
 const PUBLISHABLE_KEY =
   "pk_test_Y29zbWljLWZlcnJldC00MC5jbGVyay5hY2NvdW50cy5kZXYk";
-console.log(PUBLISHABLE_KEY);
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");

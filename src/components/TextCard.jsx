@@ -5,7 +5,7 @@ import { cn } from "../lib/utils";
 import img1 from "../img/img1.jpg";
 import img2 from "../img/img2.jpg";
 import img3 from "../img/img3.jpg";
-import { TextGenerateEffect } from "../text/TextGenerateEffect";
+import { TextGenerateEffect } from "../acernity/TextGenerateEffect";
 
 export function TextCard() {
   return (
@@ -72,7 +72,7 @@ export const Card = ({ className, children }) => {
   return (
     <div
       className={cn(
-        "max-w-sm w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] dark:bg-[rgba(40,40,40,0.70)] bg-gray-100 shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
+        "max-w-sm mt-10 w-full mx-auto p-8 transition-all duration-150 hover:scale-105 rounded-xl border border-[rgba(255,255,255,0.10)] dark:bg-[rgba(40,40,40,0.70)] bg-gray-100 shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group",
         className
       )}
     >

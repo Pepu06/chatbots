@@ -64,7 +64,7 @@ function App() {
       </div>
       <img src={logo} alt="Logo" className="mt-24 mb-6 h-16 w-auto" />
       <h1 className="text-center hidden sm:flex text-white text-3xl font-semibold">
-        All AI models in only one site
+        All chatbots in only one site
       </h1>
       <h1 className="text-center flex mb-10 sm:hidden text-white text-4xl font-semibold">
         AI chatbots
