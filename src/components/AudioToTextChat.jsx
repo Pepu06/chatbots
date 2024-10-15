@@ -193,6 +193,7 @@ const AudioToTextChat = () => {
   const startNewConversation = () => {
     setMessages([]);
     setSelectedConversation(null);
+    setMenu(false);
   };
 
   return (

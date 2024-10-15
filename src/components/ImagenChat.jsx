@@ -161,6 +161,7 @@ const ImagenChat = () => {
     setMessages([]);
     setSelectedConversation(null);
     setConversationStarted(false);
+    setMenu(false)
   };
 
   return (
@@ -264,7 +265,7 @@ const ImagenChat = () => {
             </div>
           </div>
           {!conversationStarted && (
-            <div className="flex-col justify-center items-center h-full mt-32 sm:mt-40">
+            <div className="flex-col justify-center items-center h-full mt-24 sm:mt-40">
               <h1 className="items-center justify-center text-center">
                 <span className="text-white text-2xl">
                   ¡Prueba a generar una imagen como estas!
