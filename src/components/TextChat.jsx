@@ -38,7 +38,10 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 const genAI = new GoogleGenerativeAI("AIzaSyDaByQuxXk1KhZTZGBG4wxBZNalZJxyFPs");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 const isViewTransitionSupported = () => "startViewTransition" in document;
 
@@ -110,18 +113,50 @@ export default function TextChat() {
     fetchConversations();
   }, [userId]);
 
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        const fileContent = await readFileAsBase64(file);
+        setSelectedFile({
+          name: file.name,
+          type: file.type,
+          content: fileContent,
+        });
+      } catch (error) {
+        console.error("Error reading file:", error);
+        showToast("Error reading file. Please try again.", "error");
+      }
+    }
+  };
+  const handleFileSelect1 = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        const fileContent = await readFileAsBase64(file);
+        setSelectedFile({
+          name: file.name,
+          type: file.type,
+          content: fileContent,
+        });
+      } catch (error) {
+        console.error("Error reading file:", error);
+        showToast("Error reading file. Please try again.", "error");
+      }
+    }
+  };
+
+  const readFileAsBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target.result.split(",")[1]);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSend = async () => {
     if (input.trim() || selectedFile) {
-      let fileContent = null;
-      let imagePart = null;
-      if (selectedFile) {
-        if (selectedFile.type.startsWith("image/")) {
-          imagePart = await fileToGenerativePart(selectedFile);
-        } else {
-          fileContent = await readFileContent(selectedFile);
-        }
-      }
-
       const newMessage = {
         id: Date.now(),
         sender: "user",
@@ -131,7 +166,6 @@ export default function TextChat() {
       };
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       setInput("");
-      setSelectedFile(null);
 
       const loadingMessageId = Date.now() + 1;
       setMessages((prevMessages) => [
@@ -154,85 +188,140 @@ export default function TextChat() {
           .join("\n");
 
         const prompt = `${context}\nUser: ${input}`;
-        const parts = [prompt];
+        const parts = [{ text: prompt }];
 
-        if (imagePart) {
-          parts.push(imagePart);
-        } else if (fileContent) {
-          parts.push(`File content:\n${fileContent}`);
-        }
-
-        parts.push("Bot:");
-
-        const result = await model.generateContentStream(parts);
-        let botResponse = "";
-
-        for await (const chunk of result.stream) {
-          const chunkText = chunk.text();
-          botResponse += chunkText;
-
-          setMessages((prevMessages) =>
-            prevMessages.map((msg) =>
-              msg.id === loadingMessageId ? { ...msg, text: botResponse } : msg
-            )
-          );
-        }
-
-        const updatedMessages = [
-          ...messages,
-          newMessage,
-          { id: loadingMessageId, sender: "bot", text: botResponse },
-        ];
-
-        // Save the conversation to Firestore
-        const conversationRef = selectedConversation
-          ? doc(db, "conversations", selectedConversation.id)
-          : doc(collection(db, "conversations"));
-
-        await setDoc(conversationRef, {
-          userId: userId,
-          messages: updatedMessages,
-          timestamp: new Date(),
-        });
-
-        // Update local state
-        if (selectedConversation) {
-          setConversations((prevConversations) =>
-            prevConversations.map((conv) =>
-              conv.id === selectedConversation.id
-                ? { ...conv, messages: updatedMessages, timestamp: new Date() }
-                : conv
-            )
-          );
-          setSelectedConversation({
-            ...selectedConversation,
-            messages: updatedMessages,
-            timestamp: new Date(),
+        if (selectedFile) {
+          parts.push({
+            inlineData: {
+              mimeType: selectedFile.type,
+              data: selectedFile.content,
+            },
           });
-        } else {
-          const newConversation = {
-            id: conversationRef.id,
-            messages: updatedMessages,
-            timestamp: new Date(),
-            userId: userId,
-          };
-          setConversations((prevConversations) => [
-            newConversation,
-            ...prevConversations,
-          ]);
-          setSelectedConversation(newConversation);
+        }
+
+        let retries = 0;
+        let success = false;
+
+        while (retries < MAX_RETRIES && !success) {
+          try {
+            const result = await model.generateContentStream(parts);
+            let botResponse = "";
+
+            for await (const chunk of result.stream) {
+              const chunkText = chunk.text();
+              botResponse += chunkText;
+
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === loadingMessageId
+                    ? { ...msg, text: botResponse }
+                    : msg
+                )
+              );
+            }
+
+            success = true;
+
+            const updatedMessages = [
+              ...messages,
+              newMessage,
+              { id: loadingMessageId, sender: "bot", text: botResponse },
+            ];
+
+            // Save the conversation to Firestore
+            const conversationRef = selectedConversation
+              ? doc(db, "conversations", selectedConversation.id)
+              : doc(collection(db, "conversations"));
+
+            await setDoc(conversationRef, {
+              userId: userId,
+              messages: updatedMessages,
+              timestamp: new Date(),
+            });
+
+            // Update local state
+            if (selectedConversation) {
+              setConversations((prevConversations) =>
+                prevConversations.map((conv) =>
+                  conv.id === selectedConversation.id
+                    ? {
+                        ...conv,
+                        messages: updatedMessages,
+                        timestamp: new Date(),
+                      }
+                    : conv
+                )
+              );
+              setSelectedConversation({
+                ...selectedConversation,
+                messages: updatedMessages,
+                timestamp: new Date(),
+              });
+            } else {
+              const newConversation = {
+                id: conversationRef.id,
+                messages: updatedMessages,
+                timestamp: new Date(),
+                userId: userId,
+              };
+              setConversations((prevConversations) => [
+                newConversation,
+                ...prevConversations,
+              ]);
+              setSelectedConversation(newConversation);
+            }
+          } catch (error) {
+            console.error("Error generating content:", error);
+            retries++;
+            if (retries < MAX_RETRIES) {
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+            } else {
+              throw error;
+            }
+          }
         }
 
         setIsStreaming(false);
+        setSelectedFile(null);
       } catch (error) {
         setIsStreaming(false);
         console.error("Error generating content:", error);
+        showToast(
+          "An error occurred while generating content. Please try again later.",
+          "error"
+        );
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.id === loadingMessageId
+              ? {
+                  ...msg,
+                  text: "An error occurred. Please try again.",
+                  isLoading: false,
+                }
+              : msg
+          )
+        );
       }
     }
   };
 
   const handleMenu = () => {
     setMenu((prev) => !prev);
+  };
+
+  const showToast = (message, type = "info") => {
+    Toastify({
+      text: message,
+      duration: 3000,
+      gravity: "top",
+      position: "center",
+      style: {
+        background:
+          type === "error"
+            ? "linear-gradient(to right, #ff5f6d, #ffc371)"
+            : "linear-gradient(to right, #00b09b, #96c93d)",
+      },
+    }).showToast();
   };
 
   const handleDelete = async (conversationId) => {
@@ -297,10 +386,6 @@ export default function TextChat() {
       }, 2000);
     });
   }, []);
-
-  const handleFileSelect = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
 
   const readFileContent = (file) => {
     return new Promise((resolve, reject) => {
@@ -587,15 +672,14 @@ export default function TextChat() {
                         )}
                         {message.sender === "bot" ? ( // Solo aplica Markdown al texto del Bot
                           <div className="max-w-2xl">
-
-                          <Markdown
-                            components={MarkdownComponents}
-                            remarkPlugins={[remarkGfm]}
-                            className="markdown"
+                            <Markdown
+                              components={MarkdownComponents}
+                              remarkPlugins={[remarkGfm]}
+                              className="markdown"
                             >
-                            {message.text}
-                          </Markdown>
-                            </div>
+                              {message.text}
+                            </Markdown>
+                          </div>
                         ) : (
                           <div>{message.text}</div> // Muestra el texto del usuario sin Markdown
                         )}
@@ -640,7 +724,7 @@ export default function TextChat() {
               <input
                 type="file"
                 ref={fileInputRef1}
-                onChange={handleFileSelect}
+                onChange={handleFileSelect1}
                 className="hidden"
                 accept="image/*,.txt,.pdf,.doc,.docx"
               />
