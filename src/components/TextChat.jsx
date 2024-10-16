@@ -54,6 +54,7 @@ export default function TextChat() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+  const fileInputRef1 = useRef(null);
 
   const words = [
     { text: "How" },
@@ -65,6 +66,21 @@ export default function TextChat() {
   ];
 
   useEffect(() => {
+    if (fileInputRef.current === null) {
+      console.error(
+        "El fileInputRef está en null después de montarse el componente."
+      );
+    } else {
+      console.log("El fileInputRef está correctamente asignado.");
+    }
+    if (fileInputRef1.current === null) {
+      console.error(
+        "El fileInputRef está en null después de montarse el componente."
+      );
+    } else {
+      console.log("El fileInputRef está correctamente asignado.");
+    }
+
     const fetchConversations = async () => {
       if (!userId) return;
 
@@ -308,8 +324,57 @@ export default function TextChat() {
 
   const MarkdownComponents = {
     code({ node, inline, className, children, ...props }) {
+      const isTableLike = (text) => {
+        // Detecta tabulaciones o múltiples espacios entre columnas
+        return /\t/.test(text) || /\s{2,}/.test(text);
+      };
+
+      const parseTable = (text) => {
+        // Convierte el texto en una matriz de filas y columnas
+        const rows = text.trim().split("\n");
+        return rows.map((row) => row.split(/\t|\s{2,}/)); // Tabulaciones o 2+ espacios
+      };
+
       const match = /language-(\w+)/.exec(className || "");
       const id = Math.random().toString(36).substr(2, 9);
+
+      if (!inline && !match && isTableLike(String(children))) {
+        const tableData = parseTable(String(children));
+
+        return (
+          <div className="overflow-x-auto border border-[rgb(88,88,88)] rounded-md my-4">
+            <table className="min-w-full text-white text-center">
+              <thead className="bg-[rgb(46,49,50)]">
+                <tr>
+                  {tableData[0].map((header, headerIndex) => (
+                    <th
+                      key={headerIndex}
+                      className="px-4 py-2 font-bold border-b border-[rgb(88,88,88)]"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.slice(1).map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((cell, cellIndex) => (
+                      <td
+                        key={cellIndex}
+                        className="px-4 py-2 bg-transparent border-b border-[rgb(88,88,88)]"
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+
       return !inline && match ? (
         <div className="relative">
           <SyntaxHighlighter
@@ -339,6 +404,7 @@ export default function TextChat() {
       );
     },
   };
+
   const handleNavigation = (path) => {
     if (isViewTransitionSupported()) {
       // Usar la API View Transition si está disponible
@@ -364,7 +430,7 @@ export default function TextChat() {
         <GiHamburgerMenu size={25} color="white" />
       </button>
       <div
-        className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg z-50 flex flex-col ${
+        className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
           menu ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -532,22 +598,23 @@ export default function TextChat() {
               ${messages.length === 0 ? "hidden" : "flex"}`}
           >
             {selectedFile && (
-              <div className="text-white text-sm mb-2 self-start ml-2 flex items-center">
-                {selectedFile.type.startsWith("image/") ? (
-                  <FaImage className="mr-1" />
-                ) : (
-                  <FaPaperclip className="mr-1" />
-                )}
+              <div className="text-white text-sm mb-2">
                 Archivo seleccionado: {selectedFile.name}
               </div>
             )}
             <div className="flex w-full">
               <button
-                className="ml-2 mr-1 rotate-pedro text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
-                onClick={() => fileInputRef.current.click()}
+                className="ml-2 mr-1 relative rotate-pedro text-white rounded-xl focus:outline-none"
+                onClick={() => {
+                  if (fileInputRef1.current) {
+                    fileInputRef1.current.click(); // Asegurarse de que el input esté listo
+                  } else {
+                    console.error("El fileInputRef está en null.");
+                  }
+                }}
                 title="Adjuntar archivo" // Este es el mensaje que aparece al hacer hover
               >
-                <FaPaperclip size={15} color="gray" />
+                <FaPaperclip size={18} color="gray" />
               </button>
               <textarea
                 className="flex-grow caret-white p-3 bg-[rgb(27,30,31)] text-white focus:outline-none focus:placeholder:text-white transition-colors resize-none"
@@ -559,13 +626,13 @@ export default function TextChat() {
               />
               <input
                 type="file"
-                ref={fileInputRef}
+                ref={fileInputRef1}
                 onChange={handleFileSelect}
                 className="hidden"
                 accept="image/*,.txt,.pdf,.doc,.docx"
               />
               <button
-                className="ml-2 px-4 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
+                className="ml-2 px-3 py-3 bg-[rgb(38,39,40)] text-white rounded-xl hover:bg-blue-600 transition-colors focus:outline-none"
                 onClick={handleSend}
               >
                 <FaArrowUp color="gray" />
