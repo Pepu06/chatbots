@@ -54,6 +54,11 @@ const AudioToTextChat = () => {
           ...doc.data(),
         }));
         setConversations(fetchedConversations);
+
+        if (fetchedConversations.length > 0) {
+          setSelectedConversation(fetchedConversations[0]);
+          setMessages(fetchedConversations[0].messages);
+        }
       } catch (error) {
         console.error("Error fetching conversations: ", error);
       }
@@ -94,7 +99,7 @@ const AudioToTextChat = () => {
 
     try {
       // Eliminar la conversación de Firestore
-      await deleteDoc(doc(db, "conversations", conversationId));
+      await deleteDoc(doc(db, "conversacionAudio", conversationId));
       // Mostrar notificacion de eliminacion exitosa
 
       // Actualizar el estado local

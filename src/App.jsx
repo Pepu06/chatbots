@@ -46,10 +46,10 @@ function App() {
       <div className="absolute top-0 left-0 m-5 flex justify-start">
         <SignedOut>
           <div
-            className="cursor-pointer flex items-center justify-center" // Increased size
+            className="cursor-pointer flex items-center justify-center text-gray-600" // Increased size
             onClick={() => handleNavigation("/signin")}
           >
-            <IoPersonCircleOutline size={50} color="dark-grey" />
+            <IoPersonCircleOutline size={50} />
           </div>
         </SignedOut>
         <SignedIn>

@@ -53,6 +53,12 @@ const ImagenChat = () => {
           ...doc.data(),
         }));
         setConversations(fetchedConversations);
+
+        if (fetchedConversations.length > 0) {
+          setSelectedConversation(fetchedConversations[0]);
+          setMessages(fetchedConversations[0].messages);
+          setConversationStarted(true);
+        }
       } catch (error) {
         console.error("Error fetching conversations: ", error);
       }
@@ -162,8 +168,7 @@ const ImagenChat = () => {
 
     try {
       // Eliminar la conversación de Firestore
-      await deleteDoc(doc(db, "conversations", conversationId));
-      // Mostrar notificacion de eliminacion exitosa
+      await deleteDoc(doc(db, "conversacionImg", conversationId));
 
       // Actualizar el estado local
       setConversations((prevConversations) =>

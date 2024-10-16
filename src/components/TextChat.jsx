@@ -95,6 +95,12 @@ export default function TextChat() {
           id: doc.id,
           ...doc.data(),
         }));
+
+        if (fetchedConversations.length > 0) {
+          setMessages(fetchedConversations[0].messages);
+          setSelectedConversation(fetchedConversations[0]);
+        }
+
         setConversations(fetchedConversations);
       } catch (error) {
         console.error("Error fetching conversations: ", error);
@@ -376,7 +382,7 @@ export default function TextChat() {
       }
 
       return !inline && match ? (
-        <div className="relative">
+        <div className="relative max-w-3xl">
           <SyntaxHighlighter
             style={atomDark}
             language={match[1]}
@@ -579,13 +585,20 @@ export default function TextChat() {
                             </div>
                           )
                         )}
-                        <Markdown
-                          components={MarkdownComponents}
-                          remarkPlugins={[remarkGfm]}
-                          className="markdown"
-                        >
-                          {message.text}
-                        </Markdown>
+                        {message.sender === "bot" ? ( // Solo aplica Markdown al texto del Bot
+                          <div className="max-w-2xl">
+
+                          <Markdown
+                            components={MarkdownComponents}
+                            remarkPlugins={[remarkGfm]}
+                            className="markdown"
+                            >
+                            {message.text}
+                          </Markdown>
+                            </div>
+                        ) : (
+                          <div>{message.text}</div> // Muestra el texto del usuario sin Markdown
+                        )}
                       </div>
                     )}
                   </div>
