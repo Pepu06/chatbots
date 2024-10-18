@@ -432,7 +432,7 @@ export default function TextChat() {
         <img
           src={`data:${message.fileType};base64,${message.fileContent}`}
           alt="Attached image"
-          className="w-1/2 h-auto rounded-lg mb-2"
+          className="rounded-lg mb-2 w-72"
         />
       );
     } else if (message.fileName) {
