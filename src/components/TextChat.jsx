@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   FaArrowUp,
@@ -29,15 +27,14 @@ import {
   orderBy,
   deleteDoc,
 } from "firebase/firestore";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../img/logo.png";
 import logo1 from "../img/logo1.png";
 import Toastify from "toastify-js";
 import { FaXmark } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
 
-const genAI = new GoogleGenerativeAI("AIzaSyDaByQuxXk1KhZTZGBG4wxBZNalZJxyFPs");
+const genAI = new GoogleGenerativeAI("AIzaSyDu9bI10L_Ueuq2iY8pe0E8xqoEZVDSaws");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 const MAX_RETRIES = 3;
@@ -129,6 +126,7 @@ export default function TextChat() {
       }
     }
   };
+
   const handleFileSelect1 = async (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -163,6 +161,7 @@ export default function TextChat() {
         text: input,
         fileName: selectedFile ? selectedFile.name : null,
         fileType: selectedFile ? selectedFile.type : null,
+        fileContent: selectedFile ? selectedFile.content : null,
       };
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       setInput("");
@@ -331,11 +330,7 @@ export default function TextChat() {
     }
 
     try {
-      // Eliminar la conversación de Firestore
       await deleteDoc(doc(db, "conversations", conversationId));
-      // Mostrar notificacion de eliminacion exitosa
-
-      // Actualizar el estado local
       setConversations((prevConversations) =>
         prevConversations.filter((conv) => conv.id !== conversationId)
       );
@@ -346,13 +341,13 @@ export default function TextChat() {
         destination: "https://github.com/apvarun/toastify-js",
         newWindow: true,
         close: true,
-        gravity: "top", // `top` or `bottom`
-        position: "center", // `left`, `center` or `right`
-        stopOnFocus: true, // Prevents dismissing of toast on hover
+        gravity: "top",
+        position: "center",
+        stopOnFocus: true,
         style: {
           background: "red",
         },
-        onClick: function () {}, // Callback after click
+        onClick: function () {},
       }).showToast();
     } catch (error) {
       console.error("Error deleting conversation: ", error);
@@ -387,84 +382,10 @@ export default function TextChat() {
     });
   }, []);
 
-  const readFileContent = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
-      reader.onerror = (error) => reject(error);
-      reader.readAsText(file);
-    });
-  };
-
-  const fileToGenerativePart = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Data = event.target.result.split(",")[1];
-        resolve({
-          inlineData: {
-            data: base64Data,
-            mimeType: file.type,
-          },
-        });
-      };
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const MarkdownComponents = {
     code({ node, inline, className, children, ...props }) {
-      const isTableLike = (text) => {
-        // Detecta tabulaciones o múltiples espacios entre columnas
-        return /\t/.test(text) || /\s{2,}/.test(text);
-      };
-
-      const parseTable = (text) => {
-        // Convierte el texto en una matriz de filas y columnas
-        const rows = text.trim().split("\n");
-        return rows.map((row) => row.split(/\t|\s{2,}/)); // Tabulaciones o 2+ espacios
-      };
-
       const match = /language-(\w+)/.exec(className || "");
       const id = Math.random().toString(36).substr(2, 9);
-
-      if (!inline && !match && isTableLike(String(children))) {
-        const tableData = parseTable(String(children));
-
-        return (
-          <div className="overflow-x-auto border border-[rgb(88,88,88)] rounded-md my-4">
-            <table className="min-w-full text-white text-center">
-              <thead className="bg-[rgb(46,49,50)]">
-                <tr>
-                  {tableData[0].map((header, headerIndex) => (
-                    <th
-                      key={headerIndex}
-                      className="px-4 py-2 font-bold border-b border-[rgb(88,88,88)]"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.slice(1).map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
-                        className="px-4 py-2 bg-transparent border-b border-[rgb(88,88,88)]"
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      }
 
       return !inline && match ? (
         <div className="relative max-w-3xl">
@@ -478,7 +399,7 @@ export default function TextChat() {
           </SyntaxHighlighter>
           <button
             onClick={() => copyToClipboard(String(children), id)}
-            className="absolute top-2 left-2 p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+            className="absolute top-2 right-2 p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
             aria-label="Copiar código"
           >
             {copiedStates[id] ? (
@@ -494,16 +415,43 @@ export default function TextChat() {
         </code>
       );
     },
+    img({ src, alt }) {
+      return (
+        <img
+          src={src}
+          alt={alt}
+          className="rounded-lg my-4 max-w-full h-auto"
+        />
+      );
+    },
+  };
+
+  const renderAttachment = (message) => {
+    if (message.fileType?.startsWith("image/")) {
+      return (
+        <img
+          src={`data:${message.fileType};base64,${message.fileContent}`}
+          alt="Attached image"
+          className="w-1/2 h-auto rounded-lg mb-2"
+        />
+      );
+    } else if (message.fileName) {
+      return (
+        <div className="text-sm text-gray-400 mb-1 flex items-center">
+          <FaPaperclip className="mr-1" />
+          Archivo adjunto: {message.fileName}
+        </div>
+      );
+    }
+    return null;
   };
 
   const handleNavigation = (path) => {
     if (isViewTransitionSupported()) {
-      // Usar la API View Transition si está disponible
       document.startViewTransition(() => {
         navigate(path);
       });
     } else {
-      // Fallback si la API no está disponible
       navigate(path);
     }
   };
@@ -513,7 +461,7 @@ export default function TextChat() {
       <button
         className="sm:flex hidden absolute right-4 top-1/2 transform -translate-y-1/2 p-4"
         onClick={() => handleNavigation("/imggenerator")}
-        title="Audio to text"
+        title="Image Generator"
       >
         <FaArrowRight size={30} color="white" />
       </button>
@@ -540,9 +488,8 @@ export default function TextChat() {
         </div>
         <div className="overflow-y-auto">
           {conversations.map((conversation) => (
-            <div className="flex flex-row group">
+            <div key={conversation.id} className="flex flex-row group">
               <button
-                key={conversation.id}
                 className={`w-11/12 text-start p-2 m-2 transition-all hover:bg-gray-700 text-white rounded-md ${
                   selectedConversation?.id === conversation.id
                     ? "bg-gray-700"
@@ -553,7 +500,6 @@ export default function TextChat() {
                 {conversation.messages[0]?.text.substring(0, 30) ||
                   "Nueva conversación"}
               </button>
-              {/* Botón del tacho que aparece en hover */}
               <button
                 className={`p-2 text-white hover:text-red-500 opacity-0 group-hover:opacity-100 duration-300 transition-all
                 ${
@@ -596,7 +542,7 @@ export default function TextChat() {
                   <button
                     className="ml-2 mr-1 rotate-pedro text-white rounded-xl focus:outline-none"
                     onClick={() => fileInputRef.current.click()}
-                    title="Adjuntar archivo" // Este es el mensaje que aparece al hacer hover
+                    title="Adjuntar archivo"
                   >
                     <FaPaperclip size={18} color="gray" />
                   </button>
@@ -659,18 +605,9 @@ export default function TextChat() {
                             className="w-8 h-8 mb-2"
                           />
                         ) : (
-                          message.fileName && (
-                            <div className="text-sm text-gray-400 mb-1 flex items-center">
-                              {message.fileType?.startsWith("image/") ? (
-                                <FaImage className="mr-1" />
-                              ) : (
-                                <FaPaperclip className="mr-1" />
-                              )}
-                              Archivo adjunto: {message.fileName}
-                            </div>
-                          )
+                          renderAttachment(message)
                         )}
-                        {message.sender === "bot" ? ( // Solo aplica Markdown al texto del Bot
+                        {message.sender === "bot" ? (
                           <div className="max-w-2xl">
                             <Markdown
                               components={MarkdownComponents}
@@ -681,7 +618,7 @@ export default function TextChat() {
                             </Markdown>
                           </div>
                         ) : (
-                          <div>{message.text}</div> // Muestra el texto del usuario sin Markdown
+                          <div>{message.text}</div>
                         )}
                       </div>
                     )}
@@ -702,14 +639,8 @@ export default function TextChat() {
             <div className="flex w-full">
               <button
                 className="ml-2 mr-1 relative rotate-pedro text-white rounded-xl focus:outline-none"
-                onClick={() => {
-                  if (fileInputRef1.current) {
-                    fileInputRef1.current.click(); // Asegurarse de que el input esté listo
-                  } else {
-                    console.error("El fileInputRef está en null.");
-                  }
-                }}
-                title="Adjuntar archivo" // Este es el mensaje que aparece al hacer hover
+                onClick={() => fileInputRef1.current?.click()}
+                title="Adjuntar archivo"
               >
                 <FaPaperclip size={18} color="gray" />
               </button>
