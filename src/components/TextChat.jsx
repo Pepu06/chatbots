@@ -37,7 +37,7 @@ import { FaXmark } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
-const genAI = new GoogleGenerativeAI("AIzaSyDaByQuxXk1KhZTZGBG4wxBZNalZJxyFPs");
+const genAI = new GoogleGenerativeAI("AIzaSyDKl-gjjP4CxPUuM8QodthWZlqD2hp07F0");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 const MAX_RETRIES = 3;
