@@ -12,15 +12,8 @@ import TextChat from "./components/TextChat";
 import logo from "./img/logo.png";
 import { AudioToTextCard } from "./components/AudioToTextCard";
 import AudioToTextChat from "./components/AudioToTextChat";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
-} from "@clerk/clerk-react";
-import { SignIn } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { IoPersonCircleOutline } from "react-icons/io5";
-import { Link } from "react-router-dom";
 import SignInPage from "./components/SignInPage";
 
 // Verificar si la API de View Transitions es soportada
@@ -43,7 +36,7 @@ function App() {
 
   return (
     <div className="flex flex-col overscroll-none items-center justify-center h-screen bg-[rgb(22,24,25)]">
-      <div className="absolute top-0 left-0 m-5 flex justify-start">
+      <div className="absolute top-0 right-0 m-5 flex justify-start">
         <SignedOut>
           <div
             className="cursor-pointer flex items-center justify-center text-gray-600" // Increased size
@@ -56,7 +49,7 @@ function App() {
           <UserButton
             appearance={{
               elements: {
-                avatarBox: "w-10 h-10", // Increased size
+                avatarBox: "w-8 h-8", // Increased size
               },
             }}
           />
@@ -69,25 +62,25 @@ function App() {
       <h1 className="text-center flex mb-10 sm:hidden text-white text-4xl font-semibold">
         AI chatbots
       </h1>
-      <div className="flex flex-wrap justify-center overflow-y-auto items-center h-full">
+      <div className="flex flex-wrap justify-center items-center h-full w-full overflow-hidden">
         {/* Card Container */}
-        <div className="flex flex-col sm:flex-row">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div
-            className="m-2 cursor-pointer"
+            className="cursor-pointer hover:scale-105 transition-all"
             onClick={() => handleNavigation("/textgenerator")}
           >
             <TextCard />
           </div>
 
           <div
-            className="m-2 cursor-pointer"
+            className="cursor-pointer hover:scale-105 transition-all"
             onClick={() => handleNavigation("/imggenerator")}
           >
             <ImageCard />
           </div>
 
           <div
-            className="m-2 cursor-pointer"
+            className="cursor-pointer hover:scale-105 transition-all"
             onClick={() => handleNavigation("/speechtotext")}
           >
             <AudioToTextCard />

@@ -10,12 +10,12 @@ import {
 } from "react-icons/fa";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Markdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
+import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs"; // Importa el estilo correctamente desde hljs
 import remarkGfm from "remark-gfm";
 import { TypewriterEffectSmooth } from "../acernity/TypingEffect";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, UserButton } from "@clerk/clerk-react";
 import db from "../firebase/config";
 import {
   collection,
@@ -28,7 +28,6 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "../img/logo.png";
 import logo1 from "../img/logo1.png";
 import Toastify from "toastify-js";
 import { FaXmark } from "react-icons/fa6";
@@ -55,6 +54,7 @@ export default function TextChat() {
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
   const fileInputRef1 = useRef(null);
+  const [copy, setCopy] = useState(false);
 
   const words = [
     { text: "How" },
@@ -373,15 +373,6 @@ export default function TextChat() {
     setMenu(false);
   };
 
-  const copyToClipboard = useCallback((text, id) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedStates((prev) => ({ ...prev, [id]: true }));
-      setTimeout(() => {
-        setCopiedStates((prev) => ({ ...prev, [id]: false }));
-      }, 2000);
-    });
-  }, []);
-
   const MarkdownComponents = {
     code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "");
@@ -389,25 +380,44 @@ export default function TextChat() {
 
       return !inline && match ? (
         <div className="relative max-w-3xl">
+          <div className="flex justify-between px-4 text-white text-xs items-center">
+            <p className="text-sm text-gray-400">{match[1]}</p>
+            {copy ? (
+              <button
+                className=" py-1 items-center inline-flex gap-1"
+                aria-label="Codigo copiado"
+              >
+                <FaCheck className="text-green-500" />
+              </button>
+            ) : (
+              <button
+                className=" py-1 items-center inline-flex gap-1"
+                aria-label="Copiar código"
+                onClick={() => {
+                  navigator.clipboard.writeText(children);
+                  setCopy(true);
+                  setTimeout(() => {
+                    setCopy(false);
+                  }, 3000);
+                }}
+              >
+                <FaCopy className="text-gray-300" />
+              </button>
+            )}
+          </div>
           <SyntaxHighlighter
-            style={atomDark}
+            style={atomOneDark}
             language={match[1]}
-            PreTag="div"
+            customStyle={{
+              padding: "1em",
+              borderRadius: "0.5em",
+              lineHeight: "1.5",
+              overflowX: "auto",
+            }}
             {...props}
           >
             {String(children).replace(/\n$/, "")}
           </SyntaxHighlighter>
-          <button
-            onClick={() => copyToClipboard(String(children), id)}
-            className="absolute top-2 right-2 p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
-            aria-label="Copiar código"
-          >
-            {copiedStates[id] ? (
-              <FaCheck className="text-green-400" />
-            ) : (
-              <FaCopy className="text-gray-300" />
-            )}
-          </button>
         </div>
       ) : (
         <code className={className} {...props}>
@@ -458,6 +468,15 @@ export default function TextChat() {
 
   return (
     <div className="bg-[rgb(22,24,25)] h-screen">
+      <div className="absolute top-0 right-0 p-5">
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "w-8 h-8", // Increased size
+            },
+          }}
+        />
+      </div>
       <button
         className="sm:flex hidden absolute right-4 top-1/2 transform -translate-y-1/2 p-4"
         onClick={() => handleNavigation("/imggenerator")}
@@ -465,26 +484,32 @@ export default function TextChat() {
       >
         <FaArrowRight size={30} color="white" />
       </button>
-      <button onClick={handleMenu} className="absolute p-8">
-        <GiHamburgerMenu size={25} color="white" />
-      </button>
+      <div className="absolute p-8">
+        <button onClick={handleMenu} className="hover:scale-110 transition-all">
+          <GiHamburgerMenu size={25} color="white" />
+        </button>
+      </div>
       <div
         className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg flex flex-col ${
           menu ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between p-4">
-          <button
-            onClick={handleMenu}
-            className="p-4 text-white hover:text-red-600"
-          >
-            <FaXmark size={25} />
-          </button>
-          <Link to="/">
-            <div className="p-4 text-white hover:text-blue-600 transition-all">
-              <FaHome size={25} />
-            </div>
-          </Link>
+          <div className="p-4">
+            <button
+              onClick={handleMenu}
+              className=" text-white hover:text-red-600 hover:scale-110 transition-all"
+            >
+              <FaXmark size={25} />
+            </button>
+          </div>
+          <div className="p-4">
+            <Link to="/">
+              <div className="text-white hover:text-blue-600 hover:scale-110 transition-all">
+                <FaHome size={25} />
+              </div>
+            </Link>
+          </div>
         </div>
         <div className="overflow-y-auto">
           {conversations.map((conversation) => (
@@ -528,7 +553,7 @@ export default function TextChat() {
           menu ? "ml-64 hidden sm:flex" : "flex ml-0"
         }`}
       >
-        <div className="flex flex-col p-4 w-full max-w-3xl">
+        <div className="flex flex-col p-4 w-full max-w-4xl">
           {messages.length === 0 && (
             <div className="flex justify-center flex-col items-center h-full">
               <TypewriterEffectSmooth words={words} />
@@ -581,47 +606,40 @@ export default function TextChat() {
                   } mb-4`}
                 >
                   <div
-                    className={`max-w-72 sm:max-w-3xl rounded-3xl px-5 py-3 ${
+                    className={`max-w-72 sm:max-w-4xl rounded-3xl px-5 py-3 ${
                       message.sender === "user"
                         ? "bg-[rgb(38,39,40)] text-white"
                         : "text-white leading-loose bot-message"
                     }`}
                   >
-                    {message.isLoading && isStreaming ? (
-                      <div className="flex items-center">
-                        <img
-                          src={logo}
-                          alt="Logo girando"
-                          className="w-6 h-6 mr-3 animate-spin"
-                        />
-                        {message.text}
-                      </div>
-                    ) : (
-                      <div className="flex items-start flex-col">
-                        {message.sender === "bot" ? (
-                          <img
-                            src={logo1}
-                            alt="Logo"
-                            className="w-8 h-8 mb-2"
-                          />
-                        ) : (
-                          renderAttachment(message)
-                        )}
-                        {message.sender === "bot" ? (
-                          <div className="max-w-2xl">
-                            <Markdown
-                              components={MarkdownComponents}
-                              remarkPlugins={[remarkGfm]}
-                              className="markdown"
-                            >
-                              {message.text}
-                            </Markdown>
-                          </div>
-                        ) : (
-                          <div>{message.text}</div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-start">
+                      {message.sender === "bot" ? (
+                        <img src={logo1} alt="Logo" className="w-8 h-8 mr-5" />
+                      ) : (
+                        renderAttachment(message)
+                      )}
+                      {message.sender === "bot" ? (
+                        <div className="max-w-4xl">
+                          <Markdown
+                            components={MarkdownComponents}
+                            remarkPlugins={[remarkGfm]}
+                            className="markdown prose prose-invert"
+                          >
+                            {message.text}
+                          </Markdown>
+                        </div>
+                      ) : (
+                        <div className="max-w-4xl">
+                          <Markdown
+                            components={MarkdownComponents}
+                            remarkPlugins={[remarkGfm]}
+                            className="markdown prose prose-invert"
+                          >
+                            {message.text}
+                          </Markdown>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

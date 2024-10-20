@@ -4,7 +4,7 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import logo from "../img/logo.png";
 import logo1 from "../img/logo1.png";
 import { Link } from "react-router-dom";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, UserButton } from "@clerk/clerk-react";
 import db from "../firebase/config";
 import {
   collection,
@@ -226,6 +226,15 @@ const ImagenChat = () => {
 
   return (
     <div className="bg-[rgb(22,24,25)] h-screen">
+      <div className="absolute top-0 right-0 p-5">
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "w-8 h-8", // Increased size
+            },
+          }}
+        />
+      </div>
       {/* Flecha izquierda */}
       <button
         className="sm:flex hidden absolute left-4 top-1/2 transform -translate-y-1/2 p-4"
@@ -243,26 +252,32 @@ const ImagenChat = () => {
       >
         <FaArrowRight size={30} color="white" />
       </button>
-      <button onClick={handleMenu} className="absolute p-8">
-        <GiHamburgerMenu size={25} color="white" />
-      </button>
+      <div className="absolute p-8">
+        <button onClick={handleMenu} className="hover:scale-110 transition-all">
+          <GiHamburgerMenu size={25} color="white" />
+        </button>
+      </div>
       <div
         className={`absolute transition-transform duration-300 ease-in-out top-0 left-0 h-full sm:w-64 w-screen bg-[rgb(22,24,25)] border-r border-gray-800 rounded-lg shadow-lg z-50 flex flex-col ${
           menu ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between p-4">
-          <button
-            onClick={handleMenu}
-            className="p-4 text-white hover:text-red-600"
-          >
-            <FaXmark size={25} />
-          </button>
-          <Link to="/">
-            <div className="p-4 text-white hover:text-blue-600 transition-all">
-              <FaHome size={25} />
-            </div>
-          </Link>
+          <div className="p-4">
+            <button
+              onClick={handleMenu}
+              className=" text-white hover:text-red-600 hover:scale-110 transition-all"
+            >
+              <FaXmark size={25} />
+            </button>
+          </div>
+          <div className="p-4">
+            <Link to="/">
+              <div className="text-white hover:text-blue-600 hover:scale-110 transition-all">
+                <FaHome size={25} />
+              </div>
+            </Link>
+          </div>
         </div>
         <div className="overflow-y-auto">
           {conversations.map((conversation) => (
@@ -308,7 +323,7 @@ const ImagenChat = () => {
           menu ? "ml-64 hidden sm:flex" : "flex ml-0"
         }`}
       >
-        <div className="flex flex-col p-4 w-full max-w-3xl">
+        <div className="flex flex-col p-4 w-full max-w-4xl">
           <div className="flex-grow overflow-y-auto no-scrollbar flex flex-col-reverse">
             <div>
               {messages.map((message) => (
